@@ -22,7 +22,7 @@ Else, slice your data into to datasets following the above format and rename the
 
 
 Most of the settings are self explanatory and can be found in the paper
-For more information regarding the hyperparameters, please refer to https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
+For more information regarding the hyperparameters, please refer to https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
 
 
 3- fit():
