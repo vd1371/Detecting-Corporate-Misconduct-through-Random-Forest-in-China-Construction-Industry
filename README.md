@@ -15,19 +15,22 @@ The first column of the file should be the index or date and the last column of 
 If you want the code to slive the data for training and testing, please set auto_shuffle = True
 Else, slice your data into to datasets following the above format and rename them exactly like the example solved in this repository
 
-3- Open 'RandomForest.py' using any IDE and Fill in the necessary settings:
-3-1: auto_shuffle: turns on shuffling the data before fitting
-3-2: should_cross_val: whether using k-fold cross validation or not
+2- Open 'RandomForest.py' using any IDE and Fill in the necessary settings:
+
+2-1: auto_shuffle: turns on shuffling the data before fitting
+2-2: should_cross_val: whether using k-fold cross validation or not
 
 
 Most of the settings are self explanatory and can be found in the paper
 For more information regarding the hyperparameters, please refer to https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
 
 
+3- fit():
+fits the random forest based on the settings
 
-4- fit(): fits the random forest based on the settings
+5- tune(grid):
+gets grid and tries to find the best set of hyperparameters by search in this grid
 
-5- tune(grid): gets grid and tries to find the best set of hyperparameters by search in this grid
 5-1: shoud_random_search: whether search for the best set of hyperparameters randomly or searches for all possible combinations
 5-2: n_iter: number of iteration in random search for tuning
 5-3: "tune" is designed when the auto_shuffle is True. Otherwise, it does not work. You need to pass the whole dataset to the code.
