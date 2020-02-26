@@ -6,6 +6,7 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.model_selection import train_test_split
 
 from sklearn.ensemble import RandomForestClassifier
+from imblearn.over_sampling import SMOTE
 
 class RandomForest(Report):
     
@@ -46,8 +47,13 @@ class RandomForest(Report):
         self.dates_train = self.X_train.index
         self.dates_test = self.X_test.index
 
+        if True:
+        	smt = SMOTE()
+        	self.X_train, self.Y_train = smt.fit_sample(self.X_train, self.Y_train)
+        	self.dates_train = ['SMOTE'+str(i) for i in range(len(self.X_train))]
+
         
-    def initialize(self, n_estimators=500,
+    def initialize(self, n_estimators=10000,
     					max_depth=None,
     					min_samples_split=2,
     					min_samples_leaf=1, 
@@ -102,7 +108,7 @@ class RandomForest(Report):
         # Plotting the Importances
         feature_importances_ = {}
         for i in range(len(self.model.feature_importances_)):
-            feature_importances_[self.X_train.columns[i]] = self.model.feature_importances_[i]
+            feature_importances_[self.X_test.columns[i]] = self.model.feature_importances_[i]
         
         self.report_feature_importance(feature_importances_, self.num_top_features, label = 'RF')
         
@@ -135,11 +141,11 @@ class RandomForest(Report):
         
         
 def run_me():
-    file_name = 'iris'
+    file_name = 'MisCond'
 
-    model = RandomForest(file_name, split_size=0.2, auto_shuffle=True, k=5, num_top_features = 10)
+    model = RandomForest(file_name, split_size=0.2, auto_shuffle=False, k=5, num_top_features = 20)
     
-    model.initialize(n_estimators = 1000,
+    model.initialize(n_estimators = 100,
                  max_depth=5,
                  min_samples_split=2,
                  min_samples_leaf=1,
@@ -149,14 +155,14 @@ def run_me():
     model.fit()
 
     # For finding the best hyperparameters
-    model.tune(grid = {'n_estimators': [int(x) for x in np.linspace(start = 10, stop = 1000, num = 10)],
-                         'max_features': ['auto', 'sqrt'],
-                         'max_depth': [int(x) for x in np.linspace(3, 20, num = 16)] + [None],
-                         'min_samples_split': [val for val in np.linspace(start = 0.1, stop = 0.9, num = 9)],
-                         'min_samples_leaf': [val for val in np.linspace(start = 0.1, stop = 0.5, num = 5)],
-                         'bootstrap': [True, False]},
-                         should_random_search = True,
-                         n_iter = 1)
+    # model.tune(grid = {'n_estimators': [int(x) for x in np.linspace(start = 10, stop = 1000, num = 10)],
+    #                      'max_features': ['auto', 'sqrt'],
+    #                      'max_depth': [int(x) for x in np.linspace(3, 20, num = 16)] + [None],
+    #                      'min_samples_split': [val for val in np.linspace(start = 0.1, stop = 0.9, num = 9)],
+    #                      'min_samples_leaf': [val for val in np.linspace(start = 0.1, stop = 0.5, num = 5)],
+    #                      'bootstrap': [True, False]},
+    #                      should_random_search = True,
+    #                      n_iter = 1)
     
 
 if __name__ == "__main__":
