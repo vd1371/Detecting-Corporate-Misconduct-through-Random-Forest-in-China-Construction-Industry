@@ -14,7 +14,8 @@ class RandomForest(Report):
                         split_size = 0.2,
                         auto_shuffle = True,
                         k = 5,
-                        num_top_features = 10):
+                        num_top_features = 10,
+                        imbalanced = False):
         
         super(RandomForest, self).__init__(name)
         
@@ -47,7 +48,7 @@ class RandomForest(Report):
         self.dates_train = self.X_train.index
         self.dates_test = self.X_test.index
 
-        if True:
+        if imbalanced:
         	smt = SMOTE()
         	self.X_train, self.Y_train = smt.fit_sample(self.X_train, self.Y_train)
         	self.dates_train = ['SMOTE'+str(i) for i in range(len(self.X_train))]
@@ -143,7 +144,7 @@ class RandomForest(Report):
 def run_me():
     file_name = 'MisCond'
 
-    model = RandomForest(file_name, split_size=0.2, auto_shuffle=False, k=5, num_top_features = 20)
+    model = RandomForest(file_name, split_size=0.2, auto_shuffle=False, k=5, num_top_features = 20, imbalanced = True)
     
     model.initialize(n_estimators = 100,
                  max_depth=5,
