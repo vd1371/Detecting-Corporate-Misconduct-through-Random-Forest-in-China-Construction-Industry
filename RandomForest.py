@@ -8,52 +8,64 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from imblearn.over_sampling import SMOTE
 
+from sklearn import svm
+
 class RandomForest(Report):
     
     def __init__(self,	name = None,
                         split_size = 0.2,
-                        auto_shuffle = True,
+                        should_validate = True,
                         k = 5,
                         num_top_features = 10,
                         imbalanced = False):
         
         super(RandomForest, self).__init__(name)
         
+        # Setting the model parameters
         self.num_top_features = num_top_features
         self.k = k
-        self.auto_shuffle = auto_shuffle
+        self.should_validate = should_validate
 
-        if auto_shuffle:
-        	df = pd.read_csv(name+".csv", index_col = 0)
-        	self.X = df.iloc[:,:-1]
-        	self.Y = df.iloc[:,-1]
+        # Loading the train file
+        try:
+        	df = pd.read_csv(name+"_train.csv", index_col = 0)
+        except FileNotFoundError:
+        	print ("There is a problem is loading the train file. Please rename it like filename_train.csv")
+        df = pd.read_csv(name+"_train.csv", index_col = 0)
+        self.X = df.iloc[:,:-1]
+        self.Y = df.iloc[:,-1]
+        self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(self.X, self.Y, test_size = split_size, shuffle = True)
 
-        	self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(self.X, self.Y, test_size = split_size, shuffle = True)
 
-        else:
+        # Loading the validation file
+        if should_validate:
         	try:
-        		df_train = pd.read_csv(name+"_train.csv", index_col = 0)
+        		df = pd.read_csv(name+"_valid.csv", index_col = 0)
         	except FileNotFoundError:
-        		print ("There is a problem is loading the train file. Please rename it like filename_train.csv")
-        	try:
-        		df_test = pd.read_csv(name+"_test.csv", index_col = 0)
-        	except FileNotFoundError:
-        		print ("There is a problem is loading the train file. Please rename it like filename_test.csv")
+        		print ("There is a problem is loading the train file. Please rename it like filename_valid.csv")
 
-        	self.X_train = df_train.iloc[:, :-1]
-        	self.Y_train = df_train.iloc[:, -1]
-        	self.X_test = df_test.iloc[:, :-1]
-        	self.Y_test = df_test.iloc[:, -1]
+        	self.X_valid = df.iloc[:, :-1]
+        	self.Y_valid = df.iloc[:, -1]
 
+
+        # Finding the indices
         self.dates_train = self.X_train.index
         self.dates_test = self.X_test.index
+        self.dates_valid = self.X_valid.index
 
         if imbalanced:
         	smt = SMOTE()
         	self.X_train, self.Y_train = smt.fit_sample(self.X_train, self.Y_train)
         	self.dates_train = ['SMOTE'+str(i) for i in range(len(self.X_train))]
 
-        
+	        df_ran = pd.DataFrame(self.X_train.copy(), columns = self.X_valid.columns, index= self.dates_train)
+	        df_ran['Y'] = self.Y_train
+	        df_ran.to_csv('MidCond_resampled.csv')
+
+	        df_ran = pd.DataFrame(self.X_test.copy(), columns = self.X_test.columns, index = self.dates_test)
+	        df_ran['Y'] = self.Y_test
+	        df_ran.to_csv("MisCond_test.csv")
+
     def initialize(self, n_estimators=10000,
     					max_depth=None,
     					min_samples_split=2,
@@ -95,8 +107,9 @@ class RandomForest(Report):
          
         self.model.fit(self.X_train, self.Y_train)
         print (f"Random Forest is fitted")
-            
-        if self.should_cross_val and self.auto_shuffle:
+           
+        # Attempting cross validation
+        if self.should_cross_val and self.should_validate:
             scores = cross_val_score(self.model, self.X, self.Y, cv=self.k, verbose=0)
             self.log.info(f"---- Cross validation with {self.k} groups----\n\nThe results on each split" + str(scores)+"\n")
             self.log.info(f"The average of the cross validation is {np.mean(scores):.2f}\n")
@@ -105,13 +118,13 @@ class RandomForest(Report):
     
         self.evaluate_classification(self.Y_train, self.model.predict(self.X_train), self.dates_train, 'RF-OnTrain')
         self.evaluate_classification(self.Y_test, self.model.predict(self.X_test), self.dates_test, 'RF-OnTest')
+        self.evaluate_classification(self.Y_valid, self.model.predict(self.X_valid), self.dates_valid, 'RF-OnValid')
         
-        # Plotting the Importances
-        feature_importances_ = {}
-        for i in range(len(self.model.feature_importances_)):
-            feature_importances_[self.X_test.columns[i]] = self.model.feature_importances_[i]
-        
-        self.report_feature_importance(feature_importances_, self.num_top_features, label = 'RF')
+        # Plotting the feature importances Importances
+        # feature_importances_ = {}
+        # for i in range(len(self.model.feature_importances_)):
+        #     feature_importances_[self.X_test.columns[i]] = self.model.feature_importances_[i]
+        # self.report_feature_importance(feature_importances_, self.num_top_features, label = 'RF')
         
     @timeit
     def tune(self, grid = {'n_estimators': [int(x) for x in np.linspace(start = 200, stop = 2000, num = 10)],
@@ -144,7 +157,7 @@ class RandomForest(Report):
 def run_me():
     file_name = 'MisCond'
 
-    model = RandomForest(file_name, split_size=0.2, auto_shuffle=False, k=5, num_top_features = 20, imbalanced = True)
+    model = RandomForest(file_name, split_size=0.2, should_validate=True, k=5, num_top_features = 20, imbalanced = True)
     
     model.initialize(n_estimators = 100,
                  max_depth=5,
